@@ -15,9 +15,72 @@ Service:
         '{{ computenest::file::mengjunwei-mjw_quickstart-nextcloud-all-in-one-docker-compose }}':
           ArtifactId: ${Artifact.Artifact_1.ArtifactId}
           ArtifactVersion: ${Artifact.Artifact_1.ArtifactVersion}
+      SupplierTemplateConfigs:
+        - Name: 单机版
+          Url:
+            https://service-info-private.oss-cn-hangzhou.aliyuncs.com/1853370294850618/template/17921e3e-90c5-4282-82aa-1cc2e3250864.json?Expires=1744874915&OSSAccessKeyId=LTAI5tCYphFhocJemeMWmXst&Signature=JmZB66mCA3CXB%2B7UXH7Uo9xIoz4%3D
+          PredefinedParameters:
+            - Name: 热卖套餐，特价99元/年（限购1台）
+              Parameters:
+                EcsInstanceType:
+                  - ecs.e-c1m1.large
+                SystemDiskCategory: cloud_essd_entry
+                SystemDiskSize: 40
+                InternetChargeType: PayByBandwidth
+                InternetMaxBandwidthOut: 3
+                PayPeriodUnit: Month
+                PayPeriod: 12
+                PayType: PrePaid
+              OrderList:
+                - EcsInstanceType
+                - SystemDiskCategory
+                - SystemDiskSize
+                - InternetChargeType
+                - InternetMaxBandwidthOut
+                - PayPeriodUnit
+                - PayPeriod
+                - PayType
+              Type: Normal
+              Description: 固定带宽不限流量，新老同享，上云首选！
+            - Name: 尝鲜套餐，只需0.3元/小时
+              Parameters:
+                EcsInstanceType:
+                  - ecs.e-c1m1.large
+                SystemDiskCategory: cloud_essd_entry
+                SystemDiskSize: 40
+                InternetChargeType: PayByBandwidth
+                InternetMaxBandwidthOut: 3
+                PayType: PostPaid
+              OrderList:
+                - EcsInstanceType
+                - SystemDiskCategory
+                - SystemDiskSize
+                - InternetChargeType
+                - InternetMaxBandwidthOut
+                - PayPeriodUnit
+                - PayPeriod
+                - PayType
+              Type: Normal
+              Description: 可用300元学生专属代金券抵扣！
+            - Name: 自定义套餐
+              Parameters: {}
+              OrderList:
+                - EcsInstanceType
+                - SystemDiskCategory
+                - SystemDiskSize
+                - InternetChargeType
+                - InternetMaxBandwidthOut
+                - PayPeriodUnit
+                - PayPeriod
+                - PayType
+              Type: Custom
+          AllowedRegions:
+            - cn-beijing
+            - cn-hangzhou
+            - cn-heyuan
     TemplateConfigs:
       - Name: 单机版
-        Url: 'ros_templates/template.yaml'
+        Url: ros_templates/template1.yaml
         AllowedRegions:
           - cn-qingdao
           - cn-beijing
@@ -46,6 +109,64 @@ Service:
           - eu-west-1
           - eu-central-1
           - me-east-1
+        PredefinedParameters:
+          - Name: 热卖套餐，特价99元/年（限购1台）
+            Parameters:
+              EcsInstanceType:
+                - ecs.e-c1m1.large
+              SystemDiskCategory: cloud_essd_entry
+              SystemDiskSize: 40
+              InternetChargeType: PayByBandwidth
+              InternetMaxBandwidthOut: 3
+              PayPeriodUnit: Month
+              PayPeriod: 12
+              PayType: PrePaid
+            OrderList:
+              - EcsInstanceType
+              - SystemDiskCategory
+              - SystemDiskSize
+              - InternetChargeType
+              - InternetMaxBandwidthOut
+              - PayPeriodUnit
+              - PayPeriod
+              - PayType
+            Type: Normal
+            Description: 固定带宽不限流量，新老同享，上云首选！
+          - Name: 尝鲜套餐，只需0.3元/小时
+            Parameters:
+              EcsInstanceType:
+                - ecs.e-c1m1.large
+              SystemDiskCategory: cloud_essd_entry
+              SystemDiskSize: 40
+              InternetChargeType: PayByBandwidth
+              InternetMaxBandwidthOut: 3
+              PayType: PostPaid
+            OrderList:
+              - EcsInstanceType
+              - SystemDiskCategory
+              - SystemDiskSize
+              - InternetChargeType
+              - InternetMaxBandwidthOut
+              - PayPeriodUnit
+              - PayPeriod
+              - PayType
+            Type: Normal
+            Description: 可用300元学生专属代金券抵扣！
+          - Name: 自定义套餐
+            Parameters: {}
+            OrderList:
+              - EcsInstanceType
+              - SystemDiskCategory
+              - SystemDiskSize
+              - InternetChargeType
+              - InternetMaxBandwidthOut
+              - PayPeriodUnit
+              - PayPeriod
+              - PayType
+            Type: Custom
+        ArchitectureDiagramUrl:
+          https://service-info-private.oss-cn-hangzhou.aliyuncs.com/1853370294850618/architecture/架构图.jpg?Expires=1744874915&OSSAccessKeyId=LTAI5tCYphFhocJemeMWmXst&Signature=m9RTtzHqf%2F4VljOu%2BJgixENOJCQ%3D
+        DeployScene: ECS
   ServiceType: private
   ServiceInfo:
     Locale: zh-CN

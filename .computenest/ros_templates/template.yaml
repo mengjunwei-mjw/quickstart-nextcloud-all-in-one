@@ -69,10 +69,10 @@ Parameters:
     Label:
       en: ECS Instance Charge Type
       zh-cn: 付费类型
-    Default: PostPaid
+    Default: PrePaid
     AllowedValues:
-      - PostPaid
       - PrePaid
+      - PostPaid
     AssociationProperty: ChargeType
     AssociationPropertyMetadata:
       LocaleKey: InstanceChargeType
@@ -84,9 +84,10 @@ Parameters:
     Default: Month
     AllowedValues:
       - Month
-      - Year
     AssociationProperty: PayPeriodUnit
     AssociationPropertyMetadata:
+      ValueLabelMapping:
+        Month: 月
       Visible:
         Condition:
           Fn::Not:
@@ -98,17 +99,10 @@ Parameters:
     Label:
       en: Period
       zh-cn: 购买资源时长
-    Default: 1
+    Default: 12
     AllowedValues:
-      - 1
-      - 2
       - 3
-      - 4
-      - 5
-      - 6
-      - 7
-      - 8
-      - 9
+      - 12
     AssociationProperty: PayPeriod
     AssociationPropertyMetadata:
       Visible:
@@ -124,11 +118,45 @@ Parameters:
       zh-cn: 实例类型
     AssociationProperty: ALIYUN::ECS::Instance::InstanceType
     AssociationPropertyMetadata:
+      ZoneId: ${ZoneId}
       InstanceChargeType: ${PayType}
-      Constraints:
-        InstanceTypeFamily:
-          - ecs.u1
-          - ecs.e
+  SystemDiskCategory:
+    Type: String
+    AllowedValues:
+      - cloud_efficiency
+      - cloud_essd
+      - cloud_essd_entry
+    Label:
+      en: System Disk Category
+      zh-cn: 系统盘类型
+    AssociationPropertyMetadata:
+      LocaleKey: DiskCategory
+  SystemDiskSize:
+    Type: Number
+    Label:
+      zh-cn: 系统盘空间 (GB)
+      en: System Disk Space (GB)
+    MinValue: 40
+    MaxValue: 2000
+  InternetChargeType:
+    Type: String
+    Label:
+      zh-cn: 带宽付费类型
+      en: Internet Charge Type
+    AssociationPropertyMetadata:
+      ValueLabelMapping:
+        PayByTraffic: 按流量计费
+        PayByBandwidth: 按固定带宽计费
+    AllowedValues:
+      - PayByBandwidth
+      - PayByTraffic
+  InternetMaxBandwidthOut:
+    Type: Number
+    Label:
+      zh-cn: 公网带宽 (Mbps)
+      en: Internet Max Bandwidth Out (Mbps)
+    MinValue: 1
+    MaxValue: 100
   InstancePassword:
     NoEcho: true
     Type: String
@@ -151,6 +179,11 @@ Parameters:
       en: Zone ID
       zh-cn: 可用区ID
     AssociationProperty: ALIYUN::ECS::Instance::ZoneId
+    AssociationPropertyMetadata:
+      DefaultValueStrategy: random
+      InstanceChargeType: ${PayType}
+      SystemDiskCategory: cloud_essd
+      InstanceType: ${EcsInstanceType}
   VpcId:
     Type: String
     Label:
@@ -163,6 +196,7 @@ Parameters:
         - ${VpcOption}
     Default: ''
     AssociationPropertyMetadata:
+      AutoSelectFirst: true
       Visible:
         Condition:
           Fn::Equals:
@@ -180,8 +214,9 @@ Parameters:
         - ExistingVPC
         - ${VpcOption}
     AssociationPropertyMetadata:
-      VpcId: VpcId
-      ZoneId: ZoneId
+      AutoSelectFirst: true
+      VpcId: ${VpcId}
+      ZoneId: ${ZoneId}
       Visible:
         Condition:
           Fn::Equals:
@@ -263,13 +298,18 @@ Resources:
       ImageId: "{{resolve:oos:aliyun/services/computenest/images/aliyun_3_2104_docker_compose_2_27_compute_nest}}"
       Password:
         Ref: InstancePassword
+      SystemDiskCategory:
+        Ref: SystemDiskCategory
+      SystemDiskSize:
+        Ref: SystemDiskSize
+      MaxAmount: 1
       InstanceType:
         Ref: EcsInstanceType
-      SystemDiskCategory: cloud_essd
-      SystemDiskSize: 200
-      InternetMaxBandwidthOut: 5
+      InternetMaxBandwidthOut:
+        Ref: InternetMaxBandwidthOut
+      InternetChargeType:
+        Ref: InternetChargeType
       IoOptimized: optimized
-      MaxAmount: 1
   RunInstallCommand:
     Type: ALIYUN::ECS::RunCommand
     Properties:
@@ -333,9 +373,13 @@ Metadata:
           default: 付费类型配置
       - Parameters:
           - EcsInstanceType
+          - InternetChargeType
+          - InternetMaxBandwidthOut
+          - SystemDiskCategory
+          - SystemDiskSize
           - InstancePassword
         Label:
-          default: 资源配置
+          default: 服务器基础配置
       - Parameters:
           - ZoneId
           - VpcOption
@@ -344,5 +388,34 @@ Metadata:
           - VpcCidrBlock
           - VSwitchCidrBlock
         Label:
-          default: 可用区配置
-      
+          default: 配置专有网络
+    QuickDeployConfig:
+      PackageFields:
+        - Key: EcsInstanceType
+        - Key: SystemDiskCategory
+          Label:
+            zh-cn: 系统盘
+            en: System Disk
+          Value: '${SystemDiskCategory} / ${SystemDiskSize} GB'
+        - Key: InternetChargeType
+          Label:
+            zh-cn: 公网带宽
+            en: Internet Charge Type
+          Value: '${InternetChargeType } / ${InternetMaxBandwidthOut} Mbps'
+        - Key: PayType
+          Label:
+            zh-cn: 付费类型
+            en:  Pay Type
+          Value: '${PayType}'
+        - Key: PayPeriodUnit
+          Label:
+            zh-cn: 付费时长
+            en: Pay Period
+          Value: '${PayPeriod} ${PayPeriodUnit}'
+      CustomFields:
+        - Key: InstancePassword
+      CostRelatedKeys:
+        - RegionId
+        - PayPeriod
+      AutomaticZone:
+        ZoneIdKey: ZoneId
