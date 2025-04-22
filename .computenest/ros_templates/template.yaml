@@ -69,10 +69,10 @@ Parameters:
     Label:
       en: ECS Instance Charge Type
       zh-cn: 付费类型
-    Default: PrePaid
+    Default: PostPaid
     AllowedValues:
-      - PrePaid
       - PostPaid
+      - PrePaid
     AssociationProperty: ChargeType
     AssociationPropertyMetadata:
       LocaleKey: InstanceChargeType
@@ -84,10 +84,9 @@ Parameters:
     Default: Month
     AllowedValues:
       - Month
+      - Year
     AssociationProperty: PayPeriodUnit
     AssociationPropertyMetadata:
-      ValueLabelMapping:
-        Month: 月
       Visible:
         Condition:
           Fn::Not:
@@ -99,10 +98,17 @@ Parameters:
     Label:
       en: Period
       zh-cn: 购买资源时长
-    Default: 12
+    Default: 1
     AllowedValues:
+      - 1
+      - 2
       - 3
-      - 12
+      - 4
+      - 5
+      - 6
+      - 7
+      - 8
+      - 9
     AssociationProperty: PayPeriod
     AssociationPropertyMetadata:
       Visible:
@@ -118,45 +124,11 @@ Parameters:
       zh-cn: 实例类型
     AssociationProperty: ALIYUN::ECS::Instance::InstanceType
     AssociationPropertyMetadata:
-      ZoneId: ${ZoneId}
       InstanceChargeType: ${PayType}
-  SystemDiskCategory:
-    Type: String
-    AllowedValues:
-      - cloud_efficiency
-      - cloud_essd
-      - cloud_essd_entry
-    Label:
-      en: System Disk Category
-      zh-cn: 系统盘类型
-    AssociationPropertyMetadata:
-      LocaleKey: DiskCategory
-  SystemDiskSize:
-    Type: Number
-    Label:
-      zh-cn: 系统盘空间 (GB)
-      en: System Disk Space (GB)
-    MinValue: 40
-    MaxValue: 2000
-  InternetChargeType:
-    Type: String
-    Label:
-      zh-cn: 带宽付费类型
-      en: Internet Charge Type
-    AssociationPropertyMetadata:
-      ValueLabelMapping:
-        PayByTraffic: 按流量计费
-        PayByBandwidth: 按固定带宽计费
-    AllowedValues:
-      - PayByBandwidth
-      - PayByTraffic
-  InternetMaxBandwidthOut:
-    Type: Number
-    Label:
-      zh-cn: 公网带宽 (Mbps)
-      en: Internet Max Bandwidth Out (Mbps)
-    MinValue: 1
-    MaxValue: 100
+      Constraints:
+        InstanceTypeFamily:
+          - ecs.u1
+          - ecs.e
   InstancePassword:
     NoEcho: true
     Type: String
@@ -256,7 +228,7 @@ Resources:
           - Ref: EcsVpc
           - Ref: VpcId
       SecurityGroupIngress:
-        - PortRange: 8080/8080
+        - PortRange: 8443/8443
           Priority: 1
           SourceCidrIp: 0.0.0.0/0
           IpProtocol: tcp
@@ -266,7 +238,7 @@ Resources:
           SourceCidrIp: 0.0.0.0/0
           IpProtocol: tcp
           NicType: internet
-        - PortRange: 8443/8443
+        - PortRange: 8080/8080
           Priority: 1
           SourceCidrIp: 0.0.0.0/0
           IpProtocol: tcp
@@ -295,21 +267,16 @@ Resources:
         Ref: ZoneId
       SecurityGroupId:
         Ref: SecurityGroup
-      ImageId: "{{resolve:oos:aliyun/services/computenest/images/aliyun_3_2104_docker_compose_2_27_compute_nest}}"
+      ImageId: ecs_image_quickstart-nextcloud-all-in-one
       Password:
         Ref: InstancePassword
-      SystemDiskCategory:
-        Ref: SystemDiskCategory
-      SystemDiskSize:
-        Ref: SystemDiskSize
-      MaxAmount: 1
       InstanceType:
         Ref: EcsInstanceType
-      InternetMaxBandwidthOut:
-        Ref: InternetMaxBandwidthOut
-      InternetChargeType:
-        Ref: InternetChargeType
+      SystemDiskCategory: cloud_essd
+      SystemDiskSize: 200
+      InternetMaxBandwidthOut: 5
       IoOptimized: optimized
+      MaxAmount: 1
   RunInstallCommand:
     Type: ALIYUN::ECS::RunCommand
     Properties:
@@ -323,10 +290,9 @@ Resources:
       CommandContent:
         Fn::Sub:
           - |
-            wget '{{ computenest::file::mengjunwei-mjw_quickstart-nextcloud-all-in-one-docker-compose }}' -O /root/application/docker_compose.tar
-            tar -xvf /root/application/docker_compose.tar -C /root/application
-
-            cat > /etc/systemd/system/docker-compose-app.service <<EOF
+            file_path="/etc/systemd/system/quickstart-nextcloud-all-in-one.service"
+            if [ ! -f "$file_path" ]; then
+            cat > $file_path <<EOF
             [Unit]
             Description=Docker Compose Application Service
             Requires=docker.service
@@ -335,8 +301,8 @@ Resources:
             [Service]
             Type=oneshot
             RemainAfterExit=yes
-            WorkingDirectory=/root/application/docker_compose
-            ExecStart=/usr/bin/docker compose -f docker-compose.yaml up -d
+            WorkingDirectory=/root/application
+            ExecStart=/bin/bash -c '/usr/bin/docker compose -f docker-compose.yaml up -d && /usr/local/bin/check-container-status'
             ExecStop=/usr/bin/docker compose down
             TimeoutStartSec=0
 
@@ -344,8 +310,79 @@ Resources:
             WantedBy=multi-user.target
             EOF
 
+            # 创建状态检查脚本
+            cat > /usr/local/bin/check-container-status <<'EOF'
+            #!/bin/bash
+            COMPOSE_FILE="docker-compose.yaml"
+            MAX_WAIT_TIME=3600
+            CHECK_INTERVAL=10
+
+            if ! command -v docker compose &> /dev/null; then
+                echo "Error: docker compose is not installed"
+                exit 1
+            fi
+
+            SERVICES=$(docker compose -f "$COMPOSE_FILE" config --services 2>/dev/null)
+            if [ -z "$SERVICES" ]; then
+                echo "Error: No services found"
+                exit 1
+            fi
+
+            WAIT_TIME=0
+            TIMEOUT_REACHED=false
+
+            while [ $WAIT_TIME -le $MAX_WAIT_TIME ]; do
+                ALL_HEALTHY=true
+                for SERVICE in $SERVICES; do
+                    CONTAINER_ID=$(docker compose -f "$COMPOSE_FILE" ps -q "$SERVICE")
+
+                    if [ -z "$CONTAINER_ID" ]; then
+                        echo "[$SERVICE] Not running"
+                        ALL_HEALTHY=false
+                        continue
+                    fi
+
+                    INSPECT_OUTPUT=$(docker inspect --format \
+                        '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}no-healthcheck{{end}}' \
+                        "$CONTAINER_ID" 2>/dev/null)
+
+                    STATUS=$(echo "$INSPECT_OUTPUT" | awk '{print $1}')
+                    HEALTH_STATUS=$(echo "$INSPECT_OUTPUT" | awk '{print $2}')
+
+                    case "$HEALTH_STATUS" in
+                        "healthy") ;;
+                        "unhealthy"|"starting")
+                            echo "[$SERVICE] Unhealthy: $HEALTH_STATUS"
+                            ALL_HEALTHY=false
+                            ;;
+                        "no-healthcheck")
+                            [ "$STATUS" != "running" ] && ALL_HEALTHY=false
+                            ;;
+                        *)
+                            echo "[$SERVICE] Unknown status: $HEALTH_STATUS"
+                            ALL_HEALTHY=false
+                            ;;
+                    esac
+                done
+
+                $ALL_HEALTHY && exit 0
+                [ $WAIT_TIME -ge $MAX_WAIT_TIME ] && break
+
+                sleep $CHECK_INTERVAL
+                WAIT_TIME=$((WAIT_TIME + CHECK_INTERVAL))
+            done
+
+            echo "Timeout reached! Abnormal services:" >&2
+            docker compose -f "$COMPOSE_FILE" ps --all
+            exit 1
+            EOF
+
+            chmod +x /usr/local/bin/check-container-status
+            systemctl enable quickstart-nextcloud-all-in-one
             
-            systemctl start docker-compose-app
+            fi
+            systemctl daemon-reload
+            systemctl start quickstart-nextcloud-all-in-one
           - RegionId:
               Ref: ALIYUN::Region
 Outputs: 
@@ -355,7 +392,7 @@ Outputs:
       zh-cn: nextcloud-aio-mastercontainer 访问页面。
     Value:
       Fn::Sub:
-        - http://${ServerAddress}:8080, http://${ServerAddress}:80, http://${ServerAddress}:8443
+        - http://${ServerAddress}:8443,http://${ServerAddress}:80,http://${ServerAddress}:8080
         - ServerAddress:
             Fn::Select:
               - 0
@@ -373,13 +410,9 @@ Metadata:
           default: 付费类型配置
       - Parameters:
           - EcsInstanceType
-          - InternetChargeType
-          - InternetMaxBandwidthOut
-          - SystemDiskCategory
-          - SystemDiskSize
           - InstancePassword
         Label:
-          default: 服务器基础配置
+          default: 资源配置
       - Parameters:
           - ZoneId
           - VpcOption
@@ -388,34 +421,4 @@ Metadata:
           - VpcCidrBlock
           - VSwitchCidrBlock
         Label:
-          default: 配置专有网络
-    QuickDeployConfig:
-      PackageFields:
-        - Key: EcsInstanceType
-        - Key: SystemDiskCategory
-          Label:
-            zh-cn: 系统盘
-            en: System Disk
-          Value: '${SystemDiskCategory} / ${SystemDiskSize} GB'
-        - Key: InternetChargeType
-          Label:
-            zh-cn: 公网带宽
-            en: Internet Charge Type
-          Value: '${InternetChargeType } / ${InternetMaxBandwidthOut} Mbps'
-        - Key: PayType
-          Label:
-            zh-cn: 付费类型
-            en:  Pay Type
-          Value: '${PayType}'
-        - Key: PayPeriodUnit
-          Label:
-            zh-cn: 付费时长
-            en: Pay Period
-          Value: '${PayPeriod} ${PayPeriodUnit}'
-      CustomFields:
-        - Key: InstancePassword
-      CostRelatedKeys:
-        - RegionId
-        - PayPeriod
-      AutomaticZone:
-        ZoneIdKey: ZoneId
+          default: 可用区配置
