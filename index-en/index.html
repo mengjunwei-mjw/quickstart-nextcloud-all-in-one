@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <meta name="description" content="计算巢是阿里云开放给企业应用服务商的服务管理平台。服务商能够在计算巢上发布私有化部署服务，为其客户提供云上软件一键部署的能力；同时也支持全托管模式的服务，赋能服务商托管其客户资源。">
+  <title>Quick Deployment of Nextcloud on Compute Nest - Aliyun 计算巢 x Demo</title>
+
+  <link rel="shortcut icon" href="../img/favicon.ico">
+
+  <link rel="stylesheet" href="https://unpkg.com/purecss@1.0.0/build/pure-min.css">
+  <link rel="stylesheet" href="../css/theme.css">
+  
+
+  
+
+  
+  
+
+  
+    <script src="../search/main.js"></script>
+  
+
+  
+
+  <script src="../js/highlight.min.js"></script>
+  <script>hljs.highlightAll();</script>
+</head>
+
+<body>
+  <div class="container">
+    <div class="nav">
+      <div class="nav-inner">
+        <div class="logo">
+          <img src="./img/logo-2x.png">
+        </div>
+        <div class="nav-list">
+          <ul>
+          
+              <li><a href="#quick-deployment-of-nextcloud-on-compute-nest">Quick Deployment of Nextcloud on Compute Nest</a></li>
+              
+                  <li><a href="#overview">Overview</a></li>
+                  
+              
+                  <li><a href="#prerequisites">Prerequisites</a></li>
+                  
+              
+                  <li><a href="#billing-explanation">Billing Explanation</a></li>
+                  
+              
+                  <li><a href="#deployment-architecture">Deployment Architecture</a></li>
+                  
+              
+                  <li><a href="#parameter-description">Parameter Description</a></li>
+                  
+              
+                  <li><a href="#deployment-process">Deployment Process</a></li>
+                  
+              
+          
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="content theme-github">
+      
+      <div class="content-inner">        
+        
+        <h1 id="quick-deployment-of-nextcloud-on-compute-nest">Quick Deployment of Nextcloud on Compute Nest</h1>
+<blockquote>
+<p><strong>Disclaimer: </strong>This service is provided by a third party. We make every effort to ensure its security, accuracy, and reliability, but we cannot guarantee it will be completely free from failures, interruptions, errors, or attacks. Therefore, our company hereby declares: we make no representations, warranties, or commitments regarding the content, accuracy, completeness, reliability, suitability, or timeliness of this service, and we will not be liable for any direct or indirect losses or damages resulting from your use of this service; we assume no responsibility for the content, accuracy, completeness, reliability, suitability, or timeliness of third-party websites, applications, products, and services accessed through this service, and you bear the risks and responsibilities arising from such use; we will not be liable for any losses or damages, including but not limited to direct loss, indirect loss, loss of profits, loss of goodwill, loss of data, or other economic losses, even if our company has been previously informed of the possibility of such losses or damages; we reserve the right to modify this statement from time to time, so please check this statement regularly before using this service. If you have any questions or concerns about this statement or the service, please contact us.</p>
+</blockquote>
+<h2 id="overview">Overview</h2>
+<p>Nextcloud Hub is a fully open-source cloud-based content collaboration platform from Germany. Team members can access, share, and edit documents, chat, participate in video calls, and manage emails, calendars, and projects via mobile, desktop, and web interfaces. Currently, Nextcloud's product positioning is a complete collaboration platform that ensures data security, similar to domestic enterprise platforms like DingTalk or Feishu, with the advantage that since its inception in 2016, Nextcloud has been dedicated to building a cloud-based collaboration platform that prioritizes data security compliance, offering more mature cloud-hosted application solutions for data security, significantly reducing deployment and maintenance costs for business users. Nextcloud official website: https://nextcloud.com/</p>
+<p>By 2021, Nextcloud had over 400,000 online servers, and by the end of 2023, the Nextcloud team reached 100 members spread across more than 20 countries/regions, working remotely or from offices in Berlin and Stuttgart.</p>
+<p>Alibaba Cloud Compute Nest has packaged an all-in-one Nextcloud into a one-click deployment service. You do not need to download code or install complex dependencies, nor do you need to connect to a foreign VPN. Simply fill in a few parameters and wait two minutes to access your Nextcloud application.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>Deploying a Nextcloud Community Edition service instance requires access and creation operations on certain Alibaba Cloud resources. Therefore, your account needs permissions for the following resources.</p>
+<p><strong>Note</strong>: These permissions are required only when your account is a RAM account.</p>
+<table>
+<thead>
+<tr>
+<th>Permission Policy Name</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AliyunECSFullAccess</td>
+<td>Permission to manage ECS (Elastic Compute Service)</td>
+</tr>
+<tr>
+<td>AliyunVPCFullAccess</td>
+<td>Permission to manage VPC (Virtual Private Cloud)</td>
+</tr>
+<tr>
+<td>AliyunROSFullAccess</td>
+<td>Permission to manage ROS (Resource Orchestration Service)</td>
+</tr>
+<tr>
+<td>AliyunComputeNestUserFullAccess</td>
+<td>Permission to manage user-side operations for ComputeNest Service</td>
+</tr>
+</tbody>
+</table>
+<h2 id="billing-explanation">Billing Explanation</h2>
+<p>The main costs associated with deploying the Nextcloud Community Edition on Compute Nest involve:</p>
+<ul>
+<li>The selected vCPU and memory specifications</li>
+<li>The type and capacity of the system disk</li>
+<li>The public network bandwidth</li>
+</ul>
+<h2 id="deployment-architecture">Deployment Architecture</h2>
+<p><img src="1.png" width="1500" height="700" align="bottom"/></p>
+<h2 id="parameter-description">Parameter Description</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter Group</th>
+<th>Parameter Item</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Service Instance</td>
+<td>Service Instance Name</td>
+<td>No more than 64 characters, must start with an English letter, and can contain numbers, English letters, hyphens (-), and underscores (_).</td>
+</tr>
+<tr>
+<td></td>
+<td>Region</td>
+<td>The region where the service instance is deployed.</td>
+</tr>
+<tr>
+<td></td>
+<td>Pricing Type</td>
+<td>Billing type for resources: Pay-as-you-go and Annual/Monthly Subscription.</td>
+</tr>
+<tr>
+<td>ECS Instance Config</td>
+<td>Instance Type</td>
+<td>The instance specifications available in the zone.</td>
+</tr>
+<tr>
+<td></td>
+<td>Instance Password</td>
+<td>Length of 8-30, must include three of the following (uppercase letters, lowercase letters, numbers, special symbols from ()`~!@#$%^&amp;*-+={}:;'&lt;&gt;,.?/)</td>
+</tr>
+<tr>
+<td>Network Config</td>
+<td>Zone</td>
+<td>The availability zone where the ECS instance resides.</td>
+</tr>
+<tr>
+<td></td>
+<td>VPC ID</td>
+<td>The VPC where the resource is located.</td>
+</tr>
+<tr>
+<td></td>
+<td>Switch ID</td>
+<td>The switch where the resource is located.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="deployment-process">Deployment Process</h2>
+<ol>
+<li>
+<p>Visit the ComputeNest Nextcloud Community Edition <a href="https://computenest.console.aliyun.com/service/instance/create/ap-southeast-1?type=user&amp;ServiceName=%20Nextcloud社区版">Deployment Link</a> and fill in the deployment parameters as prompted. Among these, select Singapore as the region (domestic regions cannot be accessed), choose Pay-as-you-go for the pricing type, select any zone ID and create a new VPC network for the zone configuration, and keep the default values for the rest of the sections.
+   <img alt="image.png" src="../2-en.png" />
+   <img alt="image.png" src="../8-en.png" /></p>
+</li>
+<li>
+<p>After completing the parameter entry, confirm the parameters and click <strong>Next: Confirm Order</strong>.
+   <img alt="image.png" src="../3-en.png" /></p>
+</li>
+<li>
+<p>Upon successful order confirmation and agreement to the service terms, you will be able to view the quotation details. Click <strong>Create Now</strong> to proceed to the deployment phase.
+   <img alt="image.png" src="../4-en.png" /></p>
+</li>
+<li>
+<p>After successful submission, click <strong>View Service</strong>. Wait for the deployment to complete, which should take approximately 2 minutes.
+   <img alt="image.png" src="../11-en.png" />
+   <img alt="image.png" src="../12-en.png" /></p>
+</li>
+<li>
+<p>Once deployment is finished, you can begin using the service. Enter the service instance details, copy the entire URL of the row within the red box into your browser, then retain only the portion within the red box and change http to https to access the Nextcloud application.
+   <img alt="image.png" src="../5-en.png" /></p>
+</li>
+<li>
+<p>Upon successful access, you will arrive at the following page. Copy the text within the red box and click the Open Nextcloud AIO login button.
+   <img alt="image.png" src="../6-en.png" /></p>
+</li>
+<li>
+<p>Paste the text copied in the previous step into the red box and click Login. This will allow you to start configuring and using Nextcloud. Should you encounter any issues during configuration and use, please refer to the <a href="https://github.com/nextcloud/all-in-one/blob/main/readme.md">Nextcloud Official User Documentation</a>.
+   <img alt="image.png" src="../7-en.png" /></p>
+</li>
+</ol>
+        
+      </div>
+
+      <div class="copyrights">© 2009-2022 Aliyun.com 版权所有</div>
+    </div>
+  </div>
+  
+  <!--
+  MkDocs version      : 1.6.1
+  Docs Build Date UTC : 2025-04-23 04:41:34.638718+00:00
+  -->
+</body>
+</html>
