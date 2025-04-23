@@ -1,12 +1,1 @@
-RuntimeType: Container
-ServiceType: private
-ArtifactSourceType: DockerCompose
-ServiceBuildRegion: ap-southeast-1
-RepoName: mengjunwei-mjw/quickstart-nextcloud-all-in-one
-DockerComposeEnvPath: .env
-RegionId: cn-hangzhou
-CustomParameters: ''
-DockerComposeYamlPath: docker-compose.yaml
-Owner: mengjunwei-mjw
-Branch: main
-Platform: github
+{"RepoName":"mengjunwei-mjw/quickstart-nextcloud-all-in-one","RegionId":"cn-hangzhou","Owner":"mengjunwei-mjw","Branch":"main","Platform":"github"}
