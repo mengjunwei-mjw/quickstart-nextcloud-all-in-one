@@ -3,71 +3,80 @@ Service:
   DeployType: ros
   OperationMetadata:
     StatusOperationConfigs:
-      - TemplateName: '单机版'
-        SupportOperations:
-          - Start
-          - Stop
-          - Restart
+    - TemplateName: ECS单机版
+      SupportOperations:
+      - Start
+      - Stop
+      - Restart
     SupportBackup: true
+    ModifyParametersConfig:
+    - TemplateName: ECS单机版
+      Operation:
+      - Name: 变更ECS实例规格
+        Description: 变更ECS实例规格
+        Type: Custom
+        Parameters:
+        - EcsInstanceType
+      - Name: 变更ECS实例密码
+        Description: 变更ECS实例密码
+        Type: Custom
+        Parameters:
+        - InstancePassword
+  UpgradeMetadata:
+    Description: 升级
+    SupportUpgradeFromVersions: []
+    SupportRollback: true
+    UpgradeComponents:
+    - Configuration
+    - Resource
   DeployMetadata:
     SupplierDeployMetadata:
-      FileArtifactRelation:
-        '{{ computenest::file::mengjunwei-mjw_quickstart-nextcloud-all-in-one-docker-compose }}':
-          ArtifactId: ${Artifact.Artifact_1.ArtifactId}
-          ArtifactVersion: ${Artifact.Artifact_1.ArtifactVersion}
-    TemplateConfigs:
-      - Name: 单机版
+      SupplierTemplateConfigs:
+      - Name: ECS单机版
         Url: 'ros_templates/template.yaml'
+        ArchitectureDiagramUrl: 'resources/architecture/architecture.jpg'
         AllowedRegions:
-          - cn-qingdao
-          - cn-beijing
-          - cn-zhangjiakou
-          - cn-huhehaote
-          - cn-wulanchabu
-          - cn-hangzhou
-          - cn-shanghai
-          - cn-nanjing
-          - cn-shenzhen
-          - cn-heyuan
-          - cn-guangzhou
-          - cn-fuzhou
-          - cn-wuhan-lr
-          - cn-chengdu
-          - cn-hongkong
-          - ap-northeast-1
-          - ap-northeast-2
-          - ap-southeast-1
-          - ap-southeast-3
-          - ap-southeast-6
-          - ap-southeast-5
-          - ap-southeast-7
-          - us-east-1
-          - us-west-1
-          - eu-west-1
-          - eu-central-1
-          - me-east-1
+        - ap-southeast-1
+      ArtifactRelation:
+        ecs_image_quickstart-nextcloud-all-in-one:
+          ArtifactId: ${Artifact.EcsImage.ArtifactId}
+          ArtifactVersion: draft
+    TemplateConfigs:
+    - Name: ECS单机版
+      Url: 'ros_templates/template.yaml'
+      ArchitectureDiagramUrl: 'resources/architecture/architecture.jpg'
+      AllowedRegions:
+      - ap-southeast-1
   ServiceType: private
   ServiceInfo:
-    Locale: zh-CN
-    ShortDescription: docker compose deploy
-    Image: 'resources/icons/service_logo.png'
+    # 英文版可以再配置Locale为en-US的服务信息
+  - Locale: zh-CN
+    Name: mengjunwei-mjw/quickstart-nextcloud-all-in-one-05fn
+    ShortDescription: Service description
+    Image: 
+      https://service-info-public.oss-cn-hangzhou.aliyuncs.com/1853370294850618/service-image/bfd30cc4-e959-4093-b5cb-77a05058b911.png
+    Softwares: []
 Artifact:
-  Artifact_1:
-    ArtifactType: File
-    ArtifactName: mengjunwei-mjw_quickstart-nextcloud-all-in-one-docker-compose
-    ArtifactProperty:
-      RegionId: cn-hangzhou
-      Url: 'resources/artifact_resources/docker_compose.tar'
-  Artifact_2:
-    ArtifactType: AcrImage
-    ArtifactName: AcrImage-nextcloud-all-in-one
-    ArtifactProperty:
-      RepoName: ${AcrImageBuilder.AcrImage_1.RepoName}
-      Tag: ${AcrImageBuilder.AcrImage_1.Tag}
-      RepoType: Public
-AcrImageBuilder:
-  AcrImage_1:
-    BuildType: DockerRepo
-    DockerRepoUrl: nextcloud/all-in-one:latest
-    RepoName: nextcloud/all-in-one
-    Tag: latest
+  EcsImage:
+    ArtifactType: EcsImage
+    ArtifactName: ecs_image_quickstart-nextcloud-all-in-one
+    Description: quickstart-nextcloud-all-in-one EcsImage
+    SupportRegionIds:
+    - ap-southeast-1
+    ArtifactBuildProperty:
+      CodeRepo:
+        Platform: github
+        Owner: mengjunwei-mjw
+        RepoName: mengjunwei-mjw/quickstart-nextcloud-all-in-one
+        Branch: feature/quickstart
+      RegionId: ap-southeast-1
+      CommandType: RunShellScript
+      CommandContent: |-
+        mkdir -p /root/application
+        if [ -e "/root/code/docker-compose.yaml" ]; then cp -r "/root/code/docker-compose.yaml" "/root/application/"; fi
+        if [ -e "/root/code/nextcloud_aio_mastercontainer" ]; then cp -r "/root/code/nextcloud_aio_mastercontainer" "/root/application/"; fi
+        if [ -e "/root/code/.env" ]; then cp -r "/root/code/.env" "/root/application/"; fi
+        cd /root/application
+        sed -i 's/pull_policy: always/pull_policy: if_not_present/g' docker-compose.yaml
+        docker compose -f docker-compose.yaml build 
+        docker compose -f docker-compose.yaml pull 2>&1 | stdbuf -oL grep -viE 'Downloading|sha256|extracting|KiB|Downloaded' || true;
